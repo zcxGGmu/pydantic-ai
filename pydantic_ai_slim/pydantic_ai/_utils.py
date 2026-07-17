@@ -660,7 +660,7 @@ def get_first_param_type(callable_obj: Callable[..., Any]) -> Any | None:
 
     try:
         type_hints = _typing_extra.get_function_type_hints(_decorators.unwrap_wrapped_function(callable_for_hints))
-    except (NameError, TypeError, AttributeError):
+    except (TypeError, AttributeError):
         return None
 
     return type_hints.get(first_param_name)

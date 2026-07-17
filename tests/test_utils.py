@@ -28,6 +28,7 @@ from pydantic_ai._utils import (
     merge_json_schema_defs,
     run_in_executor,
     strip_markdown_fences,
+    takes_run_context,
     using_thread_executor,
 )
 
@@ -1017,3 +1018,15 @@ def test_dataclasses_no_defaults_repr_omits_defaults():
     _items_factory.calls = 0
     assert repr(instance) == '_HasMixedFields(required=1, flag=True, items=[])'
     assert _items_factory.calls == 0
+
+
+def test_takes_run_context_raises_nameerror_for_unresolvable_forward_ref():
+    namespace: dict[str, object] = {}
+    exec(
+        "def processor(ctx: 'NonexistentType') -> None: ...",
+        namespace,
+    )
+    processor = namespace['processor']
+
+    with pytest.raises(NameError, match='NonexistentType'):
+        takes_run_context(processor)  # pyright: ignore[reportArgumentType]

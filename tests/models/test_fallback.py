@@ -1637,9 +1637,8 @@ def test_callable_class_exception_handler() -> None:
     assert result.output == 'success'
 
 
-def test_unresolvable_forward_ref_treated_as_exception_handler() -> None:
-    """A handler with unresolvable forward refs is treated as an exception handler."""
-    # Create a function whose type hints can't be resolved (triggers except branch in get_first_param_type)
+def test_unresolvable_forward_ref_raises_name_error() -> None:
+    """A handler with unresolvable forward refs raises instead of being silently misclassified."""
     exec_globals: dict[str, object] = {}
     exec(  # nosec - test-only dynamic function creation for unresolvable forward ref
         """
@@ -1650,15 +1649,12 @@ def handler(x: "NonExistentType") -> bool:
     )
     handler = exec_globals['handler']
 
-    # Classified as exception handler (forward ref can't resolve), so responses pass through
-    fallback = FallbackModel(
-        primary_model,
-        fallback_model_impl,
-        fallback_on=handler,  # type: ignore[arg-type]
-    )
-    agent = Agent(model=fallback)
-    result = agent.run_sync('hello')
-    assert result.output == 'primary response'
+    with pytest.raises(NameError, match='NonExistentType'):
+        FallbackModel(
+            primary_model,
+            fallback_model_impl,
+            fallback_on=handler,  # type: ignore[arg-type]
+        )
 
 
 def test_fallback_on_single_exception_type_direct() -> None:
